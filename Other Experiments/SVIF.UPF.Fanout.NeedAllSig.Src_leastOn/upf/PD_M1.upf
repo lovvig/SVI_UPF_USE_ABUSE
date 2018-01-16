@@ -1,0 +1,97 @@
+#********************************************************************************
+#                                                                                
+#       Nordic Semiconductor ASA, Otto Nielsens veg 12, N-7052, NORWAY           
+#                                                                                
+#********************************************************************************
+# Project     : 
+# Designer    : Loevvig, Vegard
+# Date        : 13/06/2017
+# Author      : Loevvig, Vegard
+# Description : UPF for a simple design
+#               Scopes:
+#               TOP		PD_TOP
+#               	M1	PD_M1
+#               	M2      PD_M2                    
+#               	M3	PD_M3 
+#               Copyright (c) 2017 by Nordic Semiconductor ASA                   
+#********************************************************************************
+
+######################################################################
+## Initial Setup
+######################################################################
+
+upf_version 2.0
+
+# Synopsys specific attribute (low_domain_boundary is defualt in Questa for UPF 2.0)
+set_design_attributes -elements {.} -attribute lower_domain_boundary true
+
+set_design_attributes -elements {.} -attribute conservative_diff_supply_only_isolation true
+
+# Relative to this UPF dir
+set UPF_DIR [file dirname [info script]]
+
+# Load procs
+source $env(VC_WORKSPACE)/methodology/DesignKit/scripts/upf/nic_utils.upf
+
+######################################################################
+## Power Supply Network
+######################################################################
+
+# For every supply, create a supply_net and a supply_port and connect them
+foreach supply {VSS} {
+	create_supply_net 	$supply 
+	create_supply_port	$supply
+	connect_supply_net	$supply -ports $supply
+}
+
+foreach supply {DVDD_M1_1V0} {
+	create_supply_net 	$supply 
+	create_supply_port	$supply -direction out
+	connect_supply_net	$supply -ports $supply
+}
+ 
+# Create supply sets to connect design elements to both power and ground 
+create_supply_set SS_M1		-function {power DVDD_M1_1V0}	-function {ground VSS}
+
+######################################################################
+## Create Power Domain
+######################################################################
+
+# Create power domain and connect to supply set
+create_power_domain PD_M1	\
+	-supply {primary SS_M1}	
+
+######################################################################
+## Low Power Strategy 
+######################################################################
+
+#---------------------------
+#- Isolation
+#---------------------------
+
+#---------------------------
+#- Power states - Supply sets
+#---------------------------
+
+add_power_state SS_M1 -supply 						\
+	-state	OFF	{-supply_expr	{power  == {OFF        } && ground == {FULL_ON 0.0} }} 	\
+	-state	ON	{-supply_expr 	{power  == {FULL_ON 1.0} && ground == {FULL_ON 0.0} }}	
+# Declare no more legal power states
+if {[info exist synopsys_program_name] == 0} {
+	add_power_state SS_M1 -supply -update -complete 
+}
+
+#---------------------------
+#- Power states - Power domains
+#---------------------------
+
+if {[info exist synopsys_program_name] == 0} {
+	add_power_state PD_M1 -domain					\
+		-state	RUN	{-logic_expr	{(SS_M1 == ON) }}	\	
+		-state	SHD	{-logic_expr	{(SS_M1 == OFF) }}
+} else {
+	create_power_state_group GM1
+	add_power_state -group GM1	\
+		-state	RUN	{-logic_expr 	{SS_M1 ==  ON}}	\
+		-state	SHD	{-logic_expr	{SS_M1 == OFF}}
+}

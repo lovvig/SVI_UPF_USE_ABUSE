@@ -1,0 +1,104 @@
+#********************************************************************************
+#                                                                                
+#       Nordic Semiconductor ASA, Otto Nielsens veg 12, N-7052, NORWAY           
+#                                                                                
+#********************************************************************************
+# Project     : 
+# Designer    : Loevvig, Vegard
+# Date        : 04/07/2017
+# Author      : Loevvig, Vegard
+# Description : Supply set power states definitions
+#               Copyright (c) 2017 by Nordic Semiconductor ASA                   
+#********************************************************************************
+
+######################################################################
+## Supply Set Power States
+######################################################################
+
+#---------------------------
+#- TOP
+#---------------------------
+
+add_power_state SS_TOP -supply						\
+	-state	ON	{-supply_expr	{(power  == {FULL_ON 1.0}) && 	\
+		      			 (ground == {FULL_ON 0.0}) }} 	
+
+# Declare no more legal power states
+if {[info exist VCLP] == 0} {
+	add_power_state SS_TOP -supply -update -complete 
+}
+
+#---------------------------
+#- M1
+#---------------------------
+
+add_power_state SS_M1 -supply 						\
+	-state	OFF	{-supply_expr	{(power  == {OFF        }) && 	\
+		      			 (ground == {FULL_ON 0.0}) }} 	\
+	-state	ON	{-supply_expr 	{(power  == {FULL_ON 1.0}) && 	\
+					 (ground == {FULL_ON 0.0}) }}	
+
+# Declare no more legal power states
+if {[info exist VCLP] == 0} {
+	add_power_state SS_M1 -supply -update -complete 
+}
+
+#---------------------------
+#- M2
+#---------------------------
+
+add_power_state SS_M2 -supply 						\
+	-state	OFF	{-supply_expr  	{(power  == {OFF        }) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }} 	\
+	-state	ON	{-supply_expr 	{(power  == {FULL_ON 1.0}) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }}
+
+# Declare no more legal power states
+if {[info exist VCLP] == 0} {
+	add_power_state SS_M2 -supply -update -complete 
+}
+
+#---------------------------
+#- M3
+#---------------------------
+
+add_power_state SS_M3 -supply						\
+	-state	OFF	{-supply_expr  	{(power  == {OFF        }) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }} 	\
+	-state	ON	{-supply_expr 	{(power  == {FULL_ON 1.0}) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }}
+
+# Declare no more legal power states
+if {[info exist VCLP] == 0} {
+	add_power_state SS_M3 -supply -update -complete 
+}
+
+#---------------------------
+#- M4
+#---------------------------
+
+add_power_state SS_M4 -supply						\
+	-state	OFF	{-supply_expr  	{(power  == {OFF        }) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }} 	\
+	-state	ON	{-supply_expr 	{(power  == {FULL_ON 1.0}) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }}
+
+# Declare no more legal power states
+if {[info exist VCLP] == 0} {
+	add_power_state SS_M4 -supply -update -complete 
+}
+
+#---------------------------
+#- M5
+#---------------------------
+
+add_power_state SS_M5 -supply						\
+	-state	OFF	{-supply_expr  	{(power  == {OFF        }) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }} 	\
+	-state	ON	{-supply_expr 	{(power  == {FULL_ON 1.0}) && 	\
+		      		   	 (ground == {FULL_ON 0.0}) }}
+
+# Declare no more legal power states
+if {[info exist VCLP] == 0} {
+	add_power_state SS_M5 -supply -update -complete 
+}

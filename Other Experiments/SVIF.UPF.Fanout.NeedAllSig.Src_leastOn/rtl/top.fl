@@ -1,0 +1,14 @@
+//====================================================================  
+//        Copyright (c) 2011 Nordic Semiconductor ASA, Norway           
+//====================================================================  
+// Created       : Omer Qadir at 2014-06-23
+// Modified      : $Author$ $Date$                                      
+// Version       : $Revision$ $HeadURL$                                 
+//====================================================================  
+// $VC_WORKSPACE/ip/MpwSpiSlave/rtl/pa_MpwSpiSlave.sv
+
+$VC_WORKSPACE/ip/SVIF.UPF.Fanout.NeedAllSig.Src_leastOn/rtl/in_TimingEngine.sv
+$VC_WORKSPACE/ip/SVIF.UPF.Fanout.NeedAllSig.Src_leastOn/rtl/top.sv
+$VC_WORKSPACE/ip/SVIF.UPF.Fanout.NeedAllSig.Src_leastOn/rtl/m1.sv
+$VC_WORKSPACE/ip/SVIF.UPF.Fanout.NeedAllSig.Src_leastOn/rtl/m2.sv
+$VC_WORKSPACE/ip/SVIF.UPF.Fanout.NeedAllSig.Src_leastOn/rtl/m3.sv

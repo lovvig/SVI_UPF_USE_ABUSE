@@ -1,0 +1,216 @@
+#********************************************************************************
+#                                                                                
+#       Nordic Semiconductor ASA, Otto Nielsens veg 12, N-7052, NORWAY           
+#                                                                                
+#********************************************************************************
+# Project     : 
+# Designer    : Loevvig, Vegard
+# Date        : 13/06/2017
+# Author      : Loevvig, Vegard
+# Description : UPF for a simple design
+#               Scopes:
+#               TOP		PD_TOP
+#               	M1	PD_M1
+#               	M2      PD_M2                    
+#               	M3	PD_M3 
+#               Copyright (c) 2017 by Nordic Semiconductor ASA                   
+#********************************************************************************
+
+######################################################################
+## Initial Setup
+######################################################################
+
+upf_version 3.0
+
+set_design_attributes -elements {.} -attribute lower_domain_boundary true
+
+set_design_attributes -elements {.} -attribute conservative_diff_supply_only_isolation true
+
+# UPF directory is set relative to this directory 
+set UPF_DIR      [file dirname [info script]]
+
+# Declare PDs
+set PD_M1	PD_M1
+set PD_M2	PD_M2
+set PD_M3	PD_M3
+set PD_TOP	PD_TOP 
+
+######################################################################
+## Top-level Power Supply Network
+######################################################################
+
+# For every supply, create a supply_net and a supply_port and connect them
+foreach supply {VSS DVDD_1V0} {
+	create_supply_net 	$supply 
+	create_supply_port	$supply
+	connect_supply_net	$supply -ports $supply
+}
+
+foreach supply {DVDD_M1_1V0 DVDD_M2_1V0 DVDD_M3_1V0} {
+	create_supply_net 	$supply 
+	create_supply_port	$supply -direction out
+	connect_supply_net	$supply -ports $supply
+} 
+
+# Create supply sets to connect design elements to both power and ground 
+create_supply_set SS_TOP	-function {power DVDD_1V0}	-function {ground VSS}
+
+######################################################################
+## Hierarchical UPF Setup
+## Load Module UPF Files
+######################################################################
+
+# Load sub scoped upf
+# PD_M1 
+load_upf ${UPF_DIR}/${PD_M1}.upf	-scope u_m1
+
+# PD_M2
+load_upf ${UPF_DIR}/${PD_M2}.upf	-scope u_m2
+
+# PD_M3
+load_upf ${UPF_DIR}/${PD_M3}.upf	-scope u_m3
+
+# Connect sub scopes to supplies
+# PD_M1
+foreach supply {VSS DVDD_M1_1V0} {
+	connect_supply_net	$supply -ports [list u_m1/$supply]
+}
+
+# PD_M2
+foreach supply {VSS DVDD_M2_1V0} {
+	connect_supply_net	$supply -ports [list u_m2/$supply]
+}
+
+# PD_M3
+foreach supply {VSS DVDD_M3_1V0} {
+	connect_supply_net	$supply -ports [list u_m3/$supply]
+}
+
+######################################################################
+## Create Top-level PD
+######################################################################
+
+# Create top-level power domain and connect it to top supply set
+create_power_domain ${PD_TOP}				\
+	-supply {primary SS_TOP}	
+
+######################################################################
+## Set Port Attributes 
+######################################################################
+
+set_port_attributes -elements { . } -applies_to outputs -receiver_supply SS_TOP
+set_port_attributes -elements { . } -applies_to inputs -driver_supply SS_TOP
+
+######################################################################
+## Low Power Strategy 
+######################################################################
+
+#---------------------------
+#- Isolation
+#---------------------------
+
+
+	#set_isolation ISS_IN_M2_TOP \
+	#    -domain                 PD_TOP	\
+	#    -isolation_supply_set   SS_TOP	\
+	#    -clamp_value            0           \
+	#    -applies_to             inputs	\
+	#    -source                 u_m2/SS_M2  
+	#set_isolation_control ISS_IN_M2_TOP	\
+	#    -domain                 PD_TOP      \
+	#    -isolation_signal       isolateM2   \
+	#    -isolation_sense        high        \
+	#    -location               self
+
+	#set_isolation ISS_IN_M3_TOP \
+	#    -domain                 PD_TOP	\
+	#    -isolation_supply_set   SS_TOP	\
+	#    -clamp_value            0           \
+	#    -applies_to             inputs	\
+	#    -source                 u_m3/SS_M3  
+	#set_isolation_control ISS_IN_M3_TOP	\
+	#    -domain                 PD_TOP      \
+	#    -isolation_signal       isolateM3   \
+	#    -isolation_sense        high        \
+	#    -location               self
+	
+	set_isolation ISS_IN_M2_TOP \
+	    -domain                 PD_TOP	\
+	    -isolation_supply_set   SS_TOP	\
+	    -clamp_value            0           \
+	    -applies_to             inputs	\
+	    -elements		    u_m2/uin_MyBusS5.execute 
+	set_isolation_control ISS_IN_M2_TOP	\
+	    -domain                 PD_TOP      \
+	    -isolation_signal       isolateM2   \
+	    -isolation_sense        high        \
+	    -location               self
+
+	set_isolation ISS_IN_M3_TOP \
+	    -domain                 PD_TOP	\
+	    -isolation_supply_set   SS_TOP	\
+	    -clamp_value            0           \
+	    -applies_to             inputs	\
+	    -elements		    u_m3/uin_MyBusS5.dataTx
+	set_isolation_control ISS_IN_M3_TOP	\
+	    -domain                 PD_TOP      \
+	    -isolation_signal       isolateM3   \
+	    -isolation_sense        high        \
+	    -location               self	
+
+#---------------------------
+#- Power states - Supply sets
+#---------------------------
+
+add_power_state SS_TOP -supply	\
+	-state	ON	{-supply_expr	{power  == {FULL_ON 1.0} && ground == {FULL_ON 0.0} }} 	
+
+# Declare no more legal power states
+if {[info exist synopsys_program_name] == 0} {
+	add_power_state SS_TOP -supply -update -complete 
+}
+
+#---------------------------
+#- Power states - Power domains
+#---------------------------
+
+if {[info exist synopsys_program_name] == 0} {
+	add_power_state -domain PD_TOP					\
+	-state	NORMAL_MODE	{-logic_expr 	{SS_TOP     ==  ON &&	\
+			 			 u_m1/PD_M1 == RUN &&	\
+			 			 u_m2/PD_M2 == RUN &&	\
+			 			 u_m3/PD_M3 == RUN }}	\
+	-state	IDLE_MODE	{-logic_expr	{SS_TOP     ==  ON &&	\
+			 			 u_m1/PD_M1 == SHD &&	\
+			 			 u_m2/PD_M2 == SHD &&	\
+			 			 u_m3/PD_M3 == SHD }}	\
+	-state	LOWPOWER_MODE	{-logic_expr 	{SS_TOP     ==  ON &&	\
+			 			 u_m1/PD_M1 == SHD &&	\
+			 			 u_m2/PD_M2 == SHD &&	\
+			 			 u_m3/PD_M3 == RUN }}	\
+	-state	LOWPOWER_MODE2	{-logic_expr	{SS_TOP     ==  ON &&	\
+			 			 u_m1/PD_M1 == SHD &&	\
+			 			 u_m2/PD_M2 == RUN &&	\
+			 			 u_m3/PD_M3 == RUN }}	
+} else {
+	create_power_state_group GTOP
+	add_power_state -group GTOP					\
+	-state	NORMAL_MODE	{-logic_expr 	{SS_TOP     ==  ON &&	\
+			 			 u_m1/GM1 == RUN &&	\
+			 			 u_m2/GM2 == RUN &&	\
+			 			 u_m3/GM3 == RUN }}	\
+	-state	IDLE_MODE	{-logic_expr	{SS_TOP     ==  ON &&	\
+			 			 u_m1/GM1 == SHD &&	\
+			 			 u_m2/GM2 == SHD &&	\
+			 			 u_m3/GM3 == SHD }}	\
+	-state	LOWPOWER_MODE	{-logic_expr 	{SS_TOP     ==  ON &&	\
+			 			 u_m1/GM1 == SHD &&	\
+			 			 u_m2/GM2 == SHD &&	\
+			 			 u_m3/GM3 == RUN }}	\
+	-state	LOWPOWER_MODE2	{-logic_expr	{SS_TOP     ==  ON &&	\
+			 			 u_m1/GM1 == SHD &&	\
+			 			 u_m2/GM2 == RUN &&	\
+			 			 u_m3/GM3 == RUN }}	
+}
+	
+
